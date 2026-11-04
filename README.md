@@ -4,7 +4,7 @@ An openFPGA core for the Analogue Pocket, ported from [VIC20_MiSTer](https://git
 (MikeJ and WoS's VIC-20, MiSTer port by Sorgelig). The machine is used unmodified, as a git submodule; this
 repository adds the Pocket board layer, built on the one from [openfpga-C64](https://github.com/defgenx/openfpga-C64).
 
-**Status: pre-release, not yet tested on hardware.** Reports are welcome in the issues.
+**Status: pre-release (v0.1.0), not yet tested on hardware.** Builds at 60% of the FPGA, timing met. Reports are welcome in the issues.
 
 ## Features
 
