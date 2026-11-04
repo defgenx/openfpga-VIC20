@@ -38,11 +38,16 @@ wire [2:0] slot = ntsc_f ? SLOT_NTSC : SLOT_PAL;
 reg  [8:0] px, py;
 reg        hb_d, vb_d;
 reg        span;                    // the last pixel was in the window
+reg  [2:0] vb_lines = 3'd0;         // blank lines since the vblank rise
 
 wire hb_fall = hb_d & ~hblank;
 wire hb_rise = ~hb_d & hblank;
 wire vb_fall = vb_d & ~vblank;
 wire vb_rise = ~vb_d & vblank;
+
+// VS 4 lines into the vertical blanking, clear of the last and the first picture line (as
+// openfpga-C64, where VS is the VIC-II's vsync); at an hblank rise, so never with HS
+wire vs = hb_rise && vblank && vb_lines == 3'd3;
 
 wire sample = ce_pix && !hblank && !vblank;
 wire in_win = sample && px < w && py < h;
@@ -58,15 +63,16 @@ always @(posedge clk) begin
 		if (!vblank) py <= py + 9'd1;
 	end
 	if (vb_fall) py <= 9'd0;
-	if (vb_rise) ntsc_f <= ntsc;
+	if (vb_rise) vb_lines <= 3'd0;
+	else if (hb_rise && vblank && vb_lines != 3'd7) vb_lines <= vb_lines + 3'd1;
+	if (vs) ntsc_f <= ntsc;
 	if (sample) begin
 		px <= px + 9'd1;
 		span <= in_win;
 	end
 
-	// HS at the hblank fall and VS at the vblank rise never share a clock
 	video_hs   <= hb_fall;
-	video_vs   <= vb_rise;
+	video_vs   <= vs;
 	video_de   <= de;
 	video_skip <= de && !sample;
 

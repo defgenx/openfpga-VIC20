@@ -3,7 +3,10 @@
 The APF video clock is clk_sys (35.47 MHz PAL, 32.73 MHz NTSC). The M6561 puts out a pixel on each
 `o_ce_pix` (clk_sys / 8); `vic20_video` takes every pixel with `hblank` and `vblank` low, marks the other
 clocks of the line `video_skip`, and caps the window at a fixed size so the scaler sees the same geometry
-every frame. HS is the `hblank` fall and VS the `vblank` rise, which never share a clock. The slot is
+every frame. HS is the `hblank` fall. VS is the `hblank` rise of the fourth line of vertical blanking:
+4 blank lines after the picture, 26 (PAL) / 14 (NTSC) before the next one. At the `vblank` rise it fell on
+the last picture line itself, with no HS between that line and VS. `sim/video_tb.sv` (`make -C sim
+video`) checks the window and VS placement on the M6561's timing. The slot is
 announced on the first clock with DE low after each line (`video_rgb = {8'h00, slot, 13'h0}`).
 
 | Slot | Standard       | Active area | Aspect |

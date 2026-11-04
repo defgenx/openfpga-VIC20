@@ -45,12 +45,20 @@ the C64 port's: see [openfpga-C64's architecture](https://github.com/defgenx/ope
 
 | Slot | File        | ioctl index | Handling |
 |------|-------------|-------------|----------|
-| 0    | Program     | `0x01`      | streamed; vic20_top stores it, sets `$2D-$32`, `$AE-$AF`, pulses `prg_loaded` |
-| 1    | Cartridge   | `0x41` / `0x81` | `0x41`: load address in the first 2 bytes. Exactly 2/4/8/16 KB: `0x81` with extension `.CTA`, loaded at `$A000` |
+| 0    | Program     | `0x01`      | streamed; vic20_top stores it, sets `$2D-$32`, `$AE-$AF`, pulses `prg_loaded`. A load address in `$A000-$BFFF` is a cartridge dump: sent as `0x41` (VIC20.sv's PRG path drops bytes from `$A000`) |
+| 1    | Cartridge   | `0x41` / `0x81` | `0x41`: load address in the first 2 bytes. Exactly 2/4/8/16 KB: `0x81` with extension `.CTA`, loaded at `$A000`. Both reset the VIC-20 while loading (VIC20.sv resets for `0x41` only), so the cartridge starts |
 | 2    | Disk        | –           | G64 / D64 / D81, drive 8 |
 | 3    | Megacart    | `0x02`      | streamed into SDRAM (VIC20.sv's `sdram.sv`, 8 MB window) |
-| 4    | Tape        | `0xC1`      | streamed into PSRAM cram1 through `ddram.sv` (4 MB: `ddram_psram` uses 19 address bits) |
+| 4    | Tape        | `0xC1`      | streamed into PSRAM cram1 through `ddram.sv` (4 MB: `ddram_psram` uses 19 address bits); `ioctl_wait` also follows `TDDRAM_BUSY`, see below |
 | 5    | System ROM  | `0x06`      | first 16 KB to the 1541, then PAL and NTSC KERNAL |
+
+### Tape writes
+
+`ddram.sv` reports ready one clock after it hands a write to the DDRAM port, and only sees a new `we`
+pulse on a clock where `DDRAM_BUSY` is low. A PSRAM write through `ddram_psram` lasts longer than the
+loader's gap between bytes, so the next byte's pulse fell on a busy clock and was lost: every other TAP byte
+never reached PSRAM. `vic20_top` holds `ioctl_wait` while a tape download sees `TDDRAM_BUSY`.
+`sim/tape_tb.sv` (`make -C sim tape`) streams a file at the loader's pace and reads it back.
 
 ### Memory = Auto
 

@@ -375,9 +375,11 @@ localparam [5:0]
 	S_T64_ENT   = 6'd34,
 	S_T64_CMP   = 6'd35,
 	S_T64_PICK  = 6'd36,
-	S_DL_HDR    = 6'd37;
+	S_DL_HDR    = 6'd37,
+	S_PRG_HI    = 6'd38;
 
 reg  [5:0] state;
+reg        prg_cart;             // the Program slot holds a cartridge dump: load address $A000-$BFFF
 reg  [5:0] ret;
 reg  [2:0] slot;                 // file being downloaded
 reg [31:0] fsize;
@@ -528,6 +530,7 @@ always @(posedge clk_sys) begin
 			foff <= 32'd0;
 			ioctl_addr <= 25'd0;
 			t64 <= 1'b0;
+			prg_cart <= 1'b0;
 			dl_base <= 32'd0;
 		end
 	end
@@ -547,13 +550,15 @@ always @(posedge clk_sys) begin
 				// VIC20.sv's indices: 01 PRG, 41 CRT (load address first), 02 Megacart, C1 TAP, 06 ROM
 				// A CRT of exactly 2, 4, 8 or 16 KB has no load address: it goes in as a .CTA
 				// (index 81, loaded at $A000), the README's rule for headerless cartridges.
-				ioctl_index <= slot == SLOT_PRG[2:0] ? 8'h01 : (slot == SLOT_CRT[2:0] && crt_raw) ? 8'h81 :
+				// A PRG loading at $A000-$BFFF is a cartridge dump: VIC20.sv's PRG path drops those bytes.
+				ioctl_index <= slot == SLOT_PRG[2:0] ? (prg_cart ? 8'h41 : 8'h01) : (slot == SLOT_CRT[2:0] && crt_raw) ? 8'h81 :
 				               slot == SLOT_CRT[2:0] ? 8'h41 : slot == SLOT_MC[2:0] ? 8'h02 :
 				               slot == SLOT_TAP[2:0] ? 8'hC1 : 8'h06;
 				ioctl_file_ext <= slot == SLOT_CRT[2:0] ? (crt_raw ? ".CTA" : ".CRT") : slot == SLOT_TAP[2:0] ? ".TAP" :
+				                  (slot == SLOT_PRG[2:0] && prg_cart) ? ".CRT" :
 				                  slot == SLOT_PRG[2:0] ? ".PRG" : ".ROM";
 				ioctl_download <= 1'b1;
-				load_kind <= slot == SLOT_PRG[2:0] ? 3'd0 : (slot == SLOT_CRT[2:0] || slot == SLOT_MC[2:0]) ? 3'd1 : slot == SLOT_TAP[2:0] ? 3'd3 : 3'd4;
+				load_kind <= slot == SLOT_PRG[2:0] ? (prg_cart ? 3'd1 : 3'd0) : (slot == SLOT_CRT[2:0] || slot == SLOT_MC[2:0]) ? 3'd1 : slot == SLOT_TAP[2:0] ? 3'd3 : 3'd4;
 				prog_clear <= 1'b1;
 				prog_total <= t64 ? dl_len : size_74[slot];
 				len = t64 ? dl_len : size_74[slot];
@@ -659,9 +664,20 @@ always @(posedge clk_sys) begin
 		end
 	end
 
+	// a plain PRG: its load address high byte (rbuf[1]) says whether it is a cartridge dump
+	S_PRG_HI: begin
+		cnt <= cnt + 4'd1;
+		if (cnt == 4'd0) rbuf_raddr <= 13'd1;
+		if (cnt == 4'd2) begin
+			cnt <= 4'd0;
+			prg_cart <= rbuf_q[7:5] == 3'b101;
+			state <= S_DL_CHUNK;
+		end
+	end
+
 	// directory size: max entries ($22) and used entries ($24)
 	S_T64_CNT: begin
-		if (!word[0]) state <= S_DL_CHUNK;          // a plain PRG
+		if (!word[0]) state <= S_PRG_HI;            // a plain PRG
 		else begin
 			cnt <= cnt + 4'd1;
 			if (cnt == 4'd0) rbuf_raddr <= 13'h22 + {9'd0, t64_k};

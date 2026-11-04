@@ -258,7 +258,8 @@ always @(posedge clk_sys) begin
 		end
 	end
 
-	if((old_download ^ ioctl_download) & (load_crt | load_mc)) cart_reset <= ioctl_download;
+	// VIC20.sv resets for CRT and Megacart only; a headerless cart (CTA) must start the same way
+	if((old_download ^ ioctl_download) & (load_crt | load_ct | load_mc)) cart_reset <= ioctl_download;
 	if(status[27]) {cart_reset, cart_blk} <= 0;
 	if(ioctl_download & load_mc) cart_blk <= 0;
 
@@ -270,7 +271,7 @@ end
 
 reg mc_loaded = 0;
 always @(posedge clk_sys) begin
-	if(status[27] | (ioctl_download & load_crt)) mc_loaded <= 0;
+	if(status[27] | (ioctl_download & (load_crt | load_ct))) mc_loaded <= 0;
 	if(ioctl_download & load_mc) mc_loaded <= 1;
 end
 
@@ -588,7 +589,9 @@ ddram ddram
 reg tap_wr;
 reg [1:0] tap_version;
 reg tap_wait = 0;
-assign ioctl_wait = tap_wait | prg_hold;
+// ddram.sv drops a write that arrives while TDDRAM_BUSY (a PSRAM write outlasts its ready);
+// on MiSTer the DDR3 is never busy that long. sim/tape_tb.sv.
+assign ioctl_wait = tap_wait | prg_hold | (ioctl_download & load_tap & TDDRAM_BUSY);
 
 always @(posedge clk_sys) begin
 	reg old_reset;

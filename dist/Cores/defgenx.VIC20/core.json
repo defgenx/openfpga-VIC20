@@ -9,7 +9,7 @@
       "description": "Commodore VIC-20, port of the VIC20_MiSTer core",
       "author": "defgenx",
       "url": "https://github.com/defgenx/openfpga-VIC20",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "date_release": "2026-11-04"
     },
     "framework": {

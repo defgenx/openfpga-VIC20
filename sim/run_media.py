@@ -64,11 +64,14 @@ T_C = t64(SIG_A, [(1, 0x1000, 0x1000 + 0x100, 0x180), (1, 0x0801, 0x0801 + 0x300
           {0xC0: pc1[:0xC0], 0x180: pc2[:0x100], 0x280: pc3}, 0x280 + len(pc3))
 T_D = t64(SIG_S, [(1, 0x0801, 0x0801 + len(pd), 0x60)], {0x60: pd}, 0x60 + len(pd))
 P_E = b"C64X" + rnd(196)                  # a plain PRG (load address $3643) that starts like a T64
+P_G = b"\x00\xA0" + rnd(8192)            # a cartridge dump: load address $A000, goes in as a CRT
+P_H = b"\x00\xC0" + rnd(300)             # load address $C000: past the cartridge window, a PRG
 T_F = t64(SIG_A, [(0, 0x0801, 0x0900, 0x60), (1, 0x0801, 0x0900, 0)], {}, 0x100)   # free entry, offset 0
 cases = [("t64: normal, \"C64 tape image file\"", T_A), ("t64: wrong end address, capped by the file end", T_B),
          ("t64: 3 entries out of order + free, lowest offset capped by next", T_C),
          ("t64: \"C64S tape file\" signature", T_D), ("prg starting with \"C64X\" streamed unchanged", P_E),
-         ("t64: no valid entry, no download", T_F)]
+         ("t64: no valid entry, no download", T_F), ("prg at $A000 streamed as a cartridge (41)", P_G),
+         ("prg at $C000 stays a program (01)", P_H)]
 for k, (_, d) in enumerate(cases, 1):
     hexfile(W / f"case{k}.hex", d)
 
@@ -128,14 +131,14 @@ check("prg: index 01, every byte in order",
                                      for i, l in enumerate(lines)))
 
 
-def stream_ok(k, exp):
+def stream_ok(k, exp, idx="01"):
     ls = [l.split() for l in (W / f"ioctl_c{k}.txt").read_text().splitlines()]
-    return len(ls) == len(exp) and all(l[0] == "01" and int(l[1], 16) == i and int(l[2], 16) == exp[i]
+    return len(ls) == len(exp) and all(l[0] == idx and int(l[1], 16) == i and int(l[2], 16) == exp[i]
                                        for i, l in enumerate(ls))
 
 
 for k, (name, d) in enumerate(cases, 1):
-    if d is P_E:
+    if d in (P_E, P_G, P_H):
         exp = d
     else:
         try:
@@ -143,7 +146,7 @@ for k, (name, d) in enumerate(cases, 1):
             exp = struct.pack("<H", start) + payload
         except ValueError:
             exp = b""
-    check(f"{name} ({len(exp)} B)", stream_ok(k, exp))
+    check(f"{name} ({len(exp)} B)", stream_ok(k, exp, "41" if d is P_G else "01"))
 
 dd = b"".join(int(x.replace("x", "0"), 16).to_bytes(8, "little") for x in (W / "d64_ddram.hex").read_text().split())
 exp = gcr_ref.synth_g64(bytes(d64))

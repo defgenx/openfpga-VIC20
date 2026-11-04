@@ -4,13 +4,14 @@ An openFPGA core for the Analogue Pocket, ported from [VIC20_MiSTer](https://git
 (MikeJ and WoS's VIC-20, MiSTer port by Sorgelig). The machine is used unmodified, as a git submodule; this
 repository adds the Pocket board layer, built on the one from [openfpga-C64](https://github.com/defgenx/openfpga-C64).
 
-**Status: pre-release (v0.1.0), not yet tested on hardware.** Builds at 60% of the FPGA, timing met. Reports are welcome in the issues.
+**Status: pre-release (v0.1.1).** First hardware reports: programs, cartridges, Megacart images and D64 disks load. Reports are welcome in the issues.
 
 ## Features
 
 * VIC-20 PAL (6561) and NTSC (6560), with their own KERNALs
 * RAM expansions: Auto (chosen from a program's load address), unexpanded, +3K, +8K, +16K, +24K, +35K
-* Programs (`.prg`), cartridges (`.crt`, `.prg`, headerless `.a0`), Megacart images
+* Programs (`.prg`), cartridges (`.crt`, `.prg`, headerless `.a0`), Megacart images. A cartridge dump
+  saved as a `.prg` (load address `$A000`) also starts from the Program slot
 * 1541 drive 8 with `.d64` / `.g64` (writable, saved back to the SD card), 1581 with `.d81`
 * Tapes (`.tap`), with play/pause and tape sound
 * Autostart: `RUN` for programs, `LOAD"*",8,1` + `RUN` for disks, Shift + Run/Stop for tapes

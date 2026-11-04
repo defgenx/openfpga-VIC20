@@ -17,7 +17,7 @@ module media_tb;
 	reg [8*256-1:0] dir;
 	integer sz[6];
 	integer sz_prg = 0, sz_d8 = 0, sz_d9 = 0;
-	integer csz[7], pa_val;
+	integer csz[9], pa_val;
 	reg [8*8-1:0] pa_name;                 // Program slot cases 1..6
 	reg [7:0] slot0[65536];
 	reg [7:0] slot2[1048576];
@@ -280,7 +280,7 @@ module media_tb;
 	initial begin
 		integer i;
 		void'($value$plusargs("dir=%s", dir));
-		for (i = 1; i <= 6; i = i + 1) begin
+		for (i = 1; i <= 8; i = i + 1) begin
 			$sformat(pa_name, "t%0d=%%d", i);
 			if (!$value$plusargs(pa_name, pa_val)) pa_val = 0;
 			csz[i] = pa_val;
@@ -316,6 +316,8 @@ module media_tb;
 		// ---- T64 and PRG look-alikes in the Program slot ----
 		for (i = 1; i <= 5; i = i + 1) run_case(i, 1);
 		run_case(6, 0);                   // a T64 without a program loads nothing
+		run_case(7, 1);                   // a cartridge dump in the Program slot
+		run_case(8, 1);
 
 		// ---- d64 on drive 8 ----
 		pick(2, sz[2]);

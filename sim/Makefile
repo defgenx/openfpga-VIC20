@@ -2,7 +2,7 @@
 CORE = ../src/fpga/core
 V20  = ../src/fpga/VIC20_MiSTer/rtl
 
-all: gcr media vic hid autostart osk
+all: gcr media tape vic video hid autostart osk
 
 # VIC20_MiSTer's M6561 blanking: the window sizes in vic20_video.sv and video.json
 VIC_WANT = frame 228-228 x 283 frame 204-204 x 244
@@ -11,6 +11,13 @@ vic:
 	@if [ "`tr '\n' ' ' < vic/geometry.txt`" = "$(VIC_WANT) " ]; then echo "vic: PAL 228x283, NTSC 204x244 OK"; \
 	else echo "vic: FAIL, got"; cat vic/geometry.txt; exit 1; fi
 
+# vic20_video on the M6561's timing: window size per frame, VS clear of the picture
+video:
+	iverilog -g2012 -o video_tb.vvp video_tb.sv $(CORE)/vic20_video.sv
+	vvp -n video_tb.vvp | grep '^video:' | tee video_tb.txt
+	rm -f video_tb.vvp
+	grep -q '^video: OK' video_tb.txt && rm -f video_tb.txt
+
 # gcr_synth byte-exact against Main_MiSTer's D64 -> GCR; gcr_decode at any bit rotation
 gcr:
 	python3 run_gcr.py
@@ -18,6 +25,16 @@ gcr:
 # vic20_media + ddram_psram: PRG streaming, D64 / G64 / D81 mount and write-back
 media:
 	python3 run_media.py
+
+# TAP download through VIC20.sv's tape logic, ddram.sv and ddram_psram, then read back.
+# Icarus needs ddram.sv's regs declared before its assigns: a reordered copy goes in tape/.
+tape:
+	mkdir -p tape
+	python3 -c "import re,sys; s=open('$(V20)/ddram.sv').read().split('\\n'); d=[l for l in s[:70] if re.match(r'reg\\s.*;',l)]; r=[l for l in s if l not in d]; i=next(k for k,l in enumerate(r) if l.startswith('assign DDRAM_BURSTCNT')); open('tape/ddram_sim.sv','w').write('\\n'.join(r[:i]+d+r[i:]))"
+	iverilog -g2012 -o tape_tb.vvp tape_tb.sv tape/ddram_sim.sv $(CORE)/ddram_psram.sv $(CORE)/psram.sv
+	vvp -n tape_tb.vvp | grep '^tape:' | tee tape/result.txt
+	rm -f tape_tb.vvp
+	grep -q ' OK' tape/result.txt
 
 # hid_c64: make/break events and mouse reports
 hid:
@@ -41,6 +58,6 @@ osk:
 	python3 ppm2png.py video/load_frame.ppm video/load_frame.png
 
 clean:
-	rm -rf gcr media video vic/work __pycache__
+	rm -rf gcr media tape video vic/work __pycache__
 
-.PHONY: all gcr media vic hid autostart osk clean
+.PHONY: all gcr media tape vic video hid autostart osk clean
