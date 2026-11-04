@@ -1,0 +1,203 @@
+{
+  "interact": {
+    "magic": "APF_VER_1",
+    "variables": [
+      {
+        "name": "Reset",
+        "id": 1,
+        "type": "action",
+        "enabled": true,
+        "address": "0x80000000",
+        "value": 1
+      },
+      {
+        "name": "Reset & Detach Cart",
+        "id": 2,
+        "type": "action",
+        "enabled": true,
+        "address": "0x80000004",
+        "value": 1
+      },
+      {
+        "name": "Memory",
+        "id": 3,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x80000008",
+        "defaultval": 0,
+        "options": [
+          {
+            "value": 0,
+            "name": "Auto (from PRG)"
+          },
+          {
+            "value": 1,
+            "name": "Unexpanded"
+          },
+          {
+            "value": 2,
+            "name": "+3K"
+          },
+          {
+            "value": 3,
+            "name": "+8K"
+          },
+          {
+            "value": 4,
+            "name": "+16K"
+          },
+          {
+            "value": 5,
+            "name": "+24K"
+          },
+          {
+            "value": 6,
+            "name": "+35K (all)"
+          }
+        ]
+      },
+      {
+        "name": "Video",
+        "id": 4,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x8000000C",
+        "defaultval": 0,
+        "options": [
+          {
+            "value": 0,
+            "name": "PAL"
+          },
+          {
+            "value": 1,
+            "name": "NTSC"
+          }
+        ]
+      },
+      {
+        "name": "Pad Mode",
+        "id": 5,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x80000014",
+        "defaultval": 0,
+        "options": [
+          {
+            "value": 0,
+            "name": "Joystick"
+          },
+          {
+            "value": 2,
+            "name": "Keys"
+          }
+        ]
+      },
+      {
+        "name": "Autostart",
+        "id": 6,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x8000001C",
+        "defaultval": 1,
+        "options": [
+          {
+            "value": 1,
+            "name": "On"
+          },
+          {
+            "value": 0,
+            "name": "Off"
+          }
+        ]
+      },
+      {
+        "name": "Cart RAM Writable",
+        "id": 7,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x80000020",
+        "defaultval": 0,
+        "options": [
+          {
+            "value": 0,
+            "name": "No"
+          },
+          {
+            "value": 1,
+            "name": "Yes"
+          }
+        ]
+      },
+      {
+        "name": "Write Protect",
+        "id": 8,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x80000024",
+        "defaultval": 0,
+        "options": [
+          {
+            "value": 0,
+            "name": "Off"
+          },
+          {
+            "value": 1,
+            "name": "On"
+          }
+        ]
+      },
+      {
+        "name": "Tape Sound",
+        "id": 9,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x80000028",
+        "defaultval": 0,
+        "options": [
+          {
+            "value": 0,
+            "name": "Off"
+          },
+          {
+            "value": 1,
+            "name": "On"
+          }
+        ]
+      },
+      {
+        "name": "Paddles",
+        "id": 10,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0x8000002C",
+        "defaultval": 0,
+        "options": [
+          {
+            "value": 0,
+            "name": "Off"
+          },
+          {
+            "value": 1,
+            "name": "Analog Sticks"
+          }
+        ]
+      },
+      {
+        "name": "Tape Play/Pause",
+        "id": 11,
+        "type": "action",
+        "enabled": true,
+        "address": "0x80000034",
+        "value": 1
+      }
+    ]
+  }
+}

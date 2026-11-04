@@ -1,0 +1,92 @@
+// autostart_tb.sv - autostart types LOAD"*",8,1 / RUN for a disk at the prompt,
+// SHIFT+RUN/STOP for a tape, RUN for a program, nothing for a disk swapped in during a game, and no RUN
+// for a program that starts itself after LOAD and waits for a key
+`timescale 1ns/1ps
+module autostart_tb;
+	reg clk = 0;
+	always #5 clk = ~clk;
+	reg disk = 0, tape = 0, prg = 0, prompt = 0, ready = 1, main = 0;
+	wire [7:0] key;
+	wire shift;
+	autostart #(.CLK_HZ(4000)) dut (.clk(clk), .reset(1'b0), .enable(1'b1), .disk_inserted(disk),
+		.tape_loaded(tape), .prg_loaded(prg), .at_prompt(prompt), .basic_main(main), .disk_ready(ready), .key(key), .shift(shift), .busy());
+
+	reg [8*64-1:0] typed = 0;
+	integer n = 0, errors = 0;
+	reg [7:0] key_d = 0;
+	// HID usage -> the character it types on the C64
+	function [7:0] ch(input [7:0] u, input s);
+		case (u)
+			8'h0F: ch = "L"; 8'h12: ch = "O"; 8'h04: ch = "A"; 8'h07: ch = "D"; 8'h15: ch = "R";
+			8'h18: ch = "U"; 8'h11: ch = "N"; 8'h1F: ch = s ? "\"" : "2"; 8'h30: ch = "*";
+			8'h36: ch = ","; 8'h25: ch = "8"; 8'h1E: ch = "1"; 8'h28: ch = "|";
+			8'h29: ch = s ? "^" : "!";       // ^ = SHIFT+RUN/STOP
+			default: ch = "?";
+		endcase
+	endfunction
+	always @(posedge clk) begin
+		key_d <= key;
+		if (key != 0 && key_d == 0 && ready) begin if (key == 8'h1F && !shift) errors = errors + 1; typed = {typed[8*63-1:0], ch(key, shift)}; n = n + 1; end
+	end
+	task expect_typed(input [8*64-1:0] want, input [8*32-1:0] what);
+		if (typed !== want) begin $display("FAIL %0s: typed \"%0s\"", what, typed); errors = errors + 1; end
+		else $display("%0s: typed \"%0s\"", what, typed);
+		typed = 0;
+	endtask
+
+	initial begin
+		// disk picked while booting: typed once the prompt appears
+		@(posedge clk) disk = 1; @(posedge clk) disk = 0;
+		repeat (3000) @(posedge clk);
+		prompt = 1;
+		repeat (30000) @(posedge clk);          // LOAD typed; the drive loads
+		prompt = 0;
+		repeat (5000) @(posedge clk);
+		@(posedge clk) main = 1; @(posedge clk) main = 0;
+		prompt = 1;                               // READY.
+		repeat (20000) @(posedge clk);
+		expect_typed("LOAD\"*\",8,1|RUN|", "disk at the prompt");
+
+		// the loaded program starts itself and waits for a key: LOAD only
+		@(posedge clk) disk = 1; @(posedge clk) disk = 0;
+		repeat (30000) @(posedge clk);
+		prompt = 0;
+		repeat (5000) @(posedge clk);
+		prompt = 1;                               // the program's own key wait
+		repeat (20000) @(posedge clk);
+		expect_typed("LOAD\"*\",8,1|", "self-starting program");
+
+		// disk picked at the prompt: the drive drops disk_ready a few clocks after the insert
+		// and ignores keys during its swap; typing must wait for it
+		fork
+			begin @(posedge clk) disk = 1; @(posedge clk) disk = 0; end
+			begin repeat (3) @(posedge clk); #1 ready = 0; repeat (8000) @(posedge clk); ready = 1; end
+		join
+		repeat (30000) @(posedge clk);
+		prompt = 0;
+		repeat (5000) @(posedge clk);
+		@(posedge clk) main = 1; @(posedge clk) main = 0;
+		prompt = 1;
+		repeat (20000) @(posedge clk);
+		expect_typed("LOAD\"*\",8,1|RUN|", "disk picked at the prompt");
+
+		// a disk swapped in during a game: no prompt, nothing typed
+		prompt = 0;
+		@(posedge clk) disk = 1; @(posedge clk) disk = 0;
+		repeat (60000) @(posedge clk);
+		expect_typed("", "disk swap in a game");
+
+		// tape at the prompt
+		prompt = 1;
+		@(posedge clk) tape = 1; @(posedge clk) tape = 0;
+		repeat (10000) @(posedge clk);
+		expect_typed("^", "tape at the prompt");
+
+		// program stored at the prompt: RUN only
+		@(posedge clk) prg = 1; @(posedge clk) prg = 0;
+		repeat (30000) @(posedge clk);
+		expect_typed("RUN|", "program at the prompt");
+		if (errors) $display("autostart: FAIL"); else $display("autostart: all OK");
+		$finish;
+	end
+endmodule

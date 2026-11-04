@@ -1,0 +1,79 @@
+{
+  "data": {
+    "magic": "APF_VER_1",
+    "data_slots": [
+      {
+        "name": "Program",
+        "id": 0,
+        "required": false,
+        "parameters": 1,
+        "deferload": true,
+        "extensions": [
+          "prg"
+        ],
+        "size_maximum": 65536
+      },
+      {
+        "name": "Cartridge",
+        "id": 1,
+        "required": false,
+        "parameters": 1,
+        "deferload": true,
+        "extensions": [
+          "crt",
+          "a0",
+          "prg"
+        ],
+        "size_maximum": 65536
+      },
+      {
+        "name": "Disk",
+        "id": 2,
+        "required": false,
+        "parameters": 513,
+        "deferload": true,
+        "extensions": [
+          "d64",
+          "g64",
+          "d81"
+        ],
+        "size_maximum": 2097152
+      },
+      {
+        "name": "Megacart",
+        "id": 3,
+        "required": false,
+        "parameters": 1,
+        "deferload": true,
+        "extensions": [
+          "rom",
+          "crt"
+        ],
+        "size_maximum": 8388608
+      },
+      {
+        "name": "Tape",
+        "id": 4,
+        "required": false,
+        "parameters": 1,
+        "deferload": true,
+        "extensions": [
+          "tap"
+        ],
+        "size_maximum": 4194304
+      },
+      {
+        "name": "System ROM",
+        "id": 5,
+        "required": false,
+        "parameters": 513,
+        "deferload": true,
+        "extensions": [
+          "rom",
+          "bin"
+        ],
+        "size_maximum": 32768
+      }
+    ]
+  }
+}

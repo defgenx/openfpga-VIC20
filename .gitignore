@@ -1,0 +1,11 @@
+release/
+*.zip
+src/fpga/db/
+src/fpga/incremental_db/
+src/fpga/output_files/
+src/fpga/rtl/roms/
+src/fpga/rtl/iec_drive/*.mif
+sim/**/work/
+sim/**/*.vcd
+__pycache__/
+.claude/
